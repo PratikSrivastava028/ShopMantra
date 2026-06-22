@@ -109,6 +109,7 @@ async function createOrder(req, res) {
         }
 
         await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order)
+        await publishToQueue("ORDER_PRODUCT.ORDER_CREATED", order)
 
         res.status(201).json({ order })
 

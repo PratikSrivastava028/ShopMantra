@@ -49,15 +49,22 @@ async function createCategory(req, res) {
 
 async function createProduct(req, res) {
     try {
-        const { title, description, priceAmount, priceCurrency = 'INR', category, stock, imageUrl } = req.body;
+        const { title, description, priceAmount, priceCurrency = 'INR', category, stock, imageUrl, specs } = req.body;
         const seller = req.user.id;
         const sellerName = req.user.username || req.user.email || '';
 
-        if (!imageUrl || !imageUrl.trim()) {
-            return res.status(400).json({ message: 'Product image URL is required' });
-        }
-        if (!isValidURL(imageUrl)) {
-            return res.status(400).json({ message: 'Invalid product image URL' });
+        let images = [];
+        if (req.files && req.files.length > 0) {
+            const uploadPromises = req.files.map(file => uploadImage(file));
+            const uploaded = await Promise.all(uploadPromises);
+            images = uploaded.map(img => ({ url: img.url, fileId: img.id }));
+        } else if (imageUrl && imageUrl.trim()) {
+            if (!isValidURL(imageUrl)) {
+                return res.status(400).json({ message: 'Invalid product image URL' });
+            }
+            images = [{ url: imageUrl.trim() }];
+        } else {
+            return res.status(400).json({ message: 'Product image is required' });
         }
 
         const price = {
@@ -65,13 +72,20 @@ async function createProduct(req, res) {
             currency: priceCurrency,
         };
 
-        let images = [{ url: imageUrl.trim() }];
-
         // Auto-create category if it doesn't exist
         const categoryName = (category || 'Electronics').trim();
         const existingCat = await Category.findOne({ name: { $regex: new RegExp(`^${categoryName}$`, 'i') } });
         if (!existingCat) {
             await Category.create({ name: categoryName, createdBy: seller });
+        }
+
+        let parsedSpecs = [];
+        if (specs) {
+            try {
+                parsedSpecs = typeof specs === 'string' ? JSON.parse(specs) : specs;
+            } catch (err) {
+                console.error('Failed to parse specs', err);
+            }
         }
 
         const product = await productModel.create({
@@ -84,6 +98,7 @@ async function createProduct(req, res) {
             category: categoryName,
             stock: Number(stock) || 0,
             active: true,
+            specs: parsedSpecs,
         });
 
         await publishToQueue('PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED', product);
@@ -171,7 +186,7 @@ async function updateProduct(req, res) {
         return res.status(403).json({ message: 'Forbidden: You can only update your own products' });
     }
 
-    const allowedUpdates = ['title', 'description', 'price', 'category', 'stock', 'active', 'imageUrl'];
+    const allowedUpdates = ['title', 'description', 'price', 'category', 'stock', 'active', 'imageUrl', 'specs'];
     for (const key of Object.keys(req.body)) {
         if (allowedUpdates.includes(key)) {
             if (key === 'price' && typeof req.body.price === 'object') {
@@ -185,6 +200,14 @@ async function updateProduct(req, res) {
                     return res.status(400).json({ message: 'Invalid product image URL' });
                 }
                 product.images = [{ url: req.body.imageUrl.trim() }];
+            } else if (key === 'specs') {
+                let parsedSpecs = [];
+                try {
+                    parsedSpecs = typeof req.body.specs === 'string' ? JSON.parse(req.body.specs) : req.body.specs;
+                } catch (err) {
+                    console.error('Failed to parse specs', err);
+                }
+                product.specs = parsedSpecs;
             } else {
                 product[key] = req.body[key];
             }

@@ -14,6 +14,12 @@ const productSchema = new mongoose.Schema({
     category: { type: String, default: 'Electronics' },
     salesCount: { type: Number, default: 0 },
     revenue: { type: Number, default: 0 },
+    specs: [
+        {
+            name: String,
+            value: String
+        }
+    ],
     active: { type: Boolean, default: true },
 }, { timestamps: true });
 

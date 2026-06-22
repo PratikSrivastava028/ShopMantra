@@ -20,17 +20,14 @@ import { Product } from '../types';
 export const ProductListing: React.FC = () => {
   const navigate = useNavigate();
   const { 
+    products,
     filteredProducts, 
     fetchProducts, 
     searchQuery, 
     selectedCategory, 
     setSelectedCategory,
-    selectedBrand, 
-    setSelectedBrand,
     priceRange, 
     setPriceRange,
-    selectedRating, 
-    setSelectedRating,
     sortBy, 
     setSortBy,
     layout, 
@@ -40,6 +37,9 @@ export const ProductListing: React.FC = () => {
     resetFilters,
     isLoading
   } = useProductStore();
+
+  const maxProductPrice = products.length > 0 ? Math.max(...products.map(p => p.price)) : 1500;
+  const currencySymbol = products.length > 0 && products[0].currency === 'USD' ? '$' : '₹';
 
   const { addToCart, items } = useCartStore();
   const { isAuthenticated } = useAuthStore();
@@ -51,7 +51,6 @@ export const ProductListing: React.FC = () => {
   }, []);
 
   const categories = ['All', ...backendCategories];
-  const brands = ['All', 'AeroTech', 'LogiCraft', 'SavileRow', 'ZenMantra'];
 
   const handleProductClick = (id: string) => {
     navigate(`/customer/product/${id}`);
@@ -160,14 +159,14 @@ export const ProductListing: React.FC = () => {
             <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">Price Range</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-semibold text-brand-muted">
-                <span>$0</span>
-                <span className="text-indigo-600">${priceRange[1]}</span>
+                <span>{currencySymbol}0</span>
+                <span className="text-indigo-600">{currencySymbol}{priceRange[1]}</span>
               </div>
               <input
                 type="range"
                 min="0"
-                max="1500"
-                step="25"
+                max={maxProductPrice}
+                step={Math.ceil(maxProductPrice / 100) || 1}
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                 className="w-full h-1 bg-slate-150 rounded-lg appearance-none cursor-pointer accent-indigo-600"
@@ -175,45 +174,7 @@ export const ProductListing: React.FC = () => {
             </div>
           </div>
 
-          {/* Rating filter */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">Min Rating</h3>
-            <div className="flex gap-1.5">
-              {[0, 3, 4, 4.5].map((rate) => (
-                <button
-                  key={rate}
-                  onClick={() => setSelectedRating(rate)}
-                  className={`flex-1 py-1 rounded-lg border text-xs font-semibold flex items-center justify-center gap-0.5 transition-all ${
-                    selectedRating === rate
-                      ? 'bg-amber-500 border-transparent text-white font-bold'
-                      : 'bg-white dark:bg-slate-800 hover:bg-slate-50 text-brand-muted hover:text-slate-800'
-                  }`}
-                >
-                  {rate === 0 ? 'All' : <>{rate} <Star className="w-3 h-3 fill-current" /></>}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Brand Filter */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">Brands</h3>
-            <div className="flex flex-col gap-1.5">
-              {brands.map((brand) => (
-                <button
-                  key={brand}
-                  onClick={() => setSelectedBrand(brand)}
-                  className={`text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                    selectedBrand === brand
-                      ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold'
-                      : 'text-brand-muted hover:text-brand-text dark:hover:text-slate-100 hover:bg-slate-50'
-                  }`}
-                >
-                  {brand}
-                </button>
-              ))}
-            </div>
-          </div>
 
         </aside>
 

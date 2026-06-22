@@ -198,6 +198,7 @@ async function getMetrics(req, res) {
                 currency: p.price?.currency || 'INR',
                 description: p.description || '',
                 images: p.images || [],
+                specs: p.specs || [],
             };
         }).sort((a, b) => a.stock - b.stock);
 

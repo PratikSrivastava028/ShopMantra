@@ -64,7 +64,7 @@ export const useSellerStore = create<SellerState>((set, get) => ({
         category: item.category,
         status: item.stock === 0 ? 'out_of_stock' : item.active ? 'active' : 'draft',
         description: item.description || '',
-        features: [],
+        features: (item.specs || []).map((s: any) => s.name === 'Feature' ? s.value : `${s.name}: ${s.value}`),
         seoKeywords: [],
         tags: [],
         active: item.active,
@@ -108,6 +108,17 @@ export const useSellerStore = create<SellerState>((set, get) => ({
       if (product.imageUrl) {
         formData.append('imageUrl', product.imageUrl);
       }
+
+      // Convert features bullet list to name/value specs
+      const specs = (product.features || []).map(f => {
+        const parts = f.split(':');
+        if (parts.length > 1) {
+          return { name: parts[0].trim(), value: parts.slice(1).join(':').trim() };
+        }
+        return { name: 'Feature', value: f.trim() };
+      });
+      formData.append('specs', JSON.stringify(specs));
+
       await api.products.create(formData);
       await get().fetchDashboardData();
     } catch (err) {
@@ -119,6 +130,13 @@ export const useSellerStore = create<SellerState>((set, get) => ({
   editProduct: async (product) => {
     set({ isLoading: true });
     try {
+      const specs = (product.features || []).map(f => {
+        const parts = f.split(':');
+        if (parts.length > 1) {
+          return { name: parts[0].trim(), value: parts.slice(1).join(':').trim() };
+        }
+        return { name: 'Feature', value: f.trim() };
+      });
       await api.products.update(product.id, {
         title: product.name,
         description: product.description,
@@ -126,6 +144,7 @@ export const useSellerStore = create<SellerState>((set, get) => ({
         category: product.category,
         stock: product.stock,
         imageUrl: product.imageUrl,
+        specs,
       });
       await get().fetchDashboardData();
     } catch (err) {

@@ -9,7 +9,9 @@ async function connectDB() {
 
         mongoose.connection.on('disconnected', () => {
             console.error("Mongoose connection disconnected. Exiting for restart...");
-            process.exit(1);
+            if (process.env.NODE_ENV !== 'test') {
+                process.exit(1);
+            }
         });
 
         await mongoose.connect(process.env.MONGO_URI)

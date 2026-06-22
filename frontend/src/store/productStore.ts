@@ -38,7 +38,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   searchQuery: '',
   selectedCategory: 'All',
   selectedBrand: 'All',
-  priceRange: [0, 1500],
+  priceRange: [0, 1000000],
   selectedRating: 0,
   sortBy: 'featured',
   layout: 'grid',
@@ -48,7 +48,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
     try {
       const products = await api.products.getAll();
       (window as any)._shopmantra_products = products;
-      set({ products, filteredProducts: products, isLoading: false });
+      const maxPrice = products.length > 0 ? Math.max(...products.map(p => p.price)) : 1500;
+      set({ products, filteredProducts: products, priceRange: [0, maxPrice], isLoading: false });
       get().applyFilters();
     } catch (err: any) {
       set({ error: err.message || 'Failed to fetch products', isLoading: false });
@@ -99,11 +100,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
   },
   
   resetFilters: () => {
+    const { products } = get();
+    const maxPrice = products.length > 0 ? Math.max(...products.map(p => p.price)) : 1500;
     set({
       searchQuery: '',
       selectedCategory: 'All',
       selectedBrand: 'All',
-      priceRange: [0, 1500],
+      priceRange: [0, maxPrice],
       selectedRating: 0,
       sortBy: 'featured',
     });

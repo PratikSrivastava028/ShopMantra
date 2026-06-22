@@ -50,6 +50,12 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    specs: [
+        {
+            name: String,
+            value: String
+        }
+    ],
     active: {
         type: Boolean,
         default: true   // true = visible to customers; false = paused

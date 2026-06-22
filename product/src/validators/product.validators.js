@@ -32,12 +32,20 @@ const createProductValidators = [
         .optional()
         .isIn([ 'USD', 'INR' ])
         .withMessage('priceCurrency must be USD or INR'),
-    body('imageUrl')
-        .notEmpty()
-        .withMessage('imageUrl is required')
-        .bail()
-        .isURL({ protocols: ['http', 'https'], require_protocol: true })
-        .withMessage('imageUrl must be a valid HTTP or HTTPS URL'),
+        body('imageUrl')
+        .custom((value, { req }) => {
+            if (req.files && req.files.length > 0) {
+                return true;
+            }
+            if (!value || !value.trim()) {
+                throw new Error('imageUrl is required when no files are uploaded');
+            }
+            try {
+                const url = new URL(value);
+                if (url.protocol === 'http:' || url.protocol === 'https:') return true;
+            } catch (_) {}
+            throw new Error('imageUrl must be a valid HTTP or HTTPS URL');
+        }),
     handleValidationErrors
 ];
 
