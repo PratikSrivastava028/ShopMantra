@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
-const mongoURI = 'mongodb+srv://pratiksrivastava028:pUtXXSWATSffT86z@cluster0.zgi3wt7.mongodb.net/ShopMantra-auth';
-
+const mongoURI = mongoose.connect(process.env.MONGO_URI);
 const userSchema = new mongoose.Schema({
     username: String,
     email: String,

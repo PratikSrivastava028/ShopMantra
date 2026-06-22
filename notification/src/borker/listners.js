@@ -17,7 +17,7 @@ const User = mongoose.models.user || mongoose.model('user', userSchema);
 async function getCustomerName(email, fallbackUsername) {
     try {
         if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://pratiksrivastava028:pUtXXSWATSffT86z@cluster0.zgi3wt7.mongodb.net/ShopMantra-auth');
+            await mongoose.connect(process.env.MONGO_URI);
         }
         const user = await User.findOne({ email });
         if (user) {
