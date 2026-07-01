@@ -17,23 +17,29 @@ const services = [
  */
 function freePort(port) {
   try {
-    // Use PowerShell to get the PID holding the port
-    const result = execSync(
-      `powershell -Command "Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess"`,
-      { encoding: 'utf8', shell: true }
-    ).trim();
+    const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', shell: true });
+    if (!result) return;
 
-    if (!result) return; // port is free
+    const lines = result.split(/\r?\n/).filter(line => line.includes('LISTENING'));
+    const pids = new Set();
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 5) {
+        const pid = parts[parts.length - 1];
+        if (/^\d+$/.test(pid) && pid !== '0') {
+          pids.add(pid);
+        }
+      }
+    }
 
-    const pids = [...new Set(result.split(/\r?\n/).map(s => s.trim()).filter(s => /^\d+$/.test(s)))];
-    pids.forEach(pid => {
+    [...pids].forEach(pid => {
       try {
         execSync(`taskkill /PID ${pid} /F`, { shell: true, stdio: 'ignore' });
         console.log(`  Freed port ${port} (killed PID ${pid})`);
       } catch (_) {}
     });
   } catch (_) {
-    // Port was already free — no action needed
+    // Port was already free or command failed
   }
 }
 
